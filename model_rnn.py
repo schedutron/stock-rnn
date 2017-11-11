@@ -6,6 +6,7 @@ import os
 import random
 import re
 import shutil
+import subprocess
 import time
 import tensorflow as tf
 
@@ -244,6 +245,9 @@ class LstmRNN(object):
        
         # Save the final model
         self.save(global_step)
+
+        # Add code here to save models to S3.
+        subprocess.call(['python2', 'save_to_s3.py'])
         return final_pred
 
     @property
@@ -297,7 +301,7 @@ class LstmRNN(object):
     def plot_samples(self, preds, targets, figname, stock_sym=None):
         def _flatten(seq):
             return [x for y in seq for x in y]
-        
+
         truths = _flatten(targets)[-200:]
         
         preds = _flatten(preds)[-200:]
