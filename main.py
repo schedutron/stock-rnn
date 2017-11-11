@@ -113,8 +113,6 @@ def main(_):
                     pickle.dump(test_prediction, f)
             
             #rnn_model.plot_samples(test_prediction, test_prediction, 'check.png', 'GOOG')
-            #plt.show(block=True)
-            print '-'*33
             if not rnn_model.load()[0]:
                 raise Exception("[!] Train a model first, then run test mode")
 

@@ -11,3 +11,4 @@ images/*
 tmp_data/
 .DS_Store
 api_log/
+secret.py

@@ -184,8 +184,7 @@ class LstmRNN(object):
             self.targets: merged_test_y,
             self.symbols: merged_test_labels,
         }
-        print 'merged_test_X', merged_test_X
-        print 'merged_test_y', merged_test_y
+        
         global_step = 0
 
         num_batches = sum(len(d_.train_X) for d_ in dataset_list) // config.batch_size
