@@ -233,6 +233,7 @@ class LstmRNN(object):
                             sample_preds = test_pred[indices]
                             sample_truth = merged_test_y[indices]
                             self.plot_samples(sample_preds, sample_truth, image_path, stock_sym=sample_sym)
+                            self.plot_samples_normalized(sample_preds, sample_truth, image_path, stock_sym=sample_sym)
 
                         self.save(global_step)
 
@@ -293,6 +294,7 @@ class LstmRNN(object):
             return [x for y in seq for x in y]
 
         truths = _flatten(targets)[-200:]
+        
         preds = _flatten(preds)[-200:]
         days = range(len(truths))[-200:]
 
@@ -309,4 +311,30 @@ class LstmRNN(object):
             plt.title(stock_sym + " | Last %d days in test" % len(truths))
 
         plt.savefig(figname, format='png', bbox_inches='tight', transparent=True)
+        plt.close()
+    
+
+    def plot_samples_normalized(self, preds, targets, figname, stock_sym=None):
+        def _flatten(seq):
+            return [x for y in seq for x in y]
+
+        truths = _flatten(targets)[-200:]
+        truths = [float(truth)/ truths[0] for truth in truths]
+        preds = _flatten(preds)[-200:]
+        preds = [float(pred)/preds[0] for pred in preds]
+        days = range(len(truths))[-200:]
+
+        plt.figure(figsize=(12, 6))
+        plt.plot(days, truths, label='truth')
+        plt.plot(days, preds, label='pred')
+        plt.legend(loc='upper left', frameon=False)
+        plt.xlabel("day")
+        plt.ylabel("normalized price")
+        plt.ylim((min(truths), max(truths)))
+        plt.grid(ls='--')
+
+        if stock_sym:
+            plt.title(stock_sym + " | Last %d days in test" % len(truths))
+
+        plt.savefig(figname.split('.')[0]+'_normalized.png', format='png', bbox_inches='tight', transparent=True)
         plt.close()
