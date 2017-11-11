@@ -2,7 +2,6 @@
 *.pyc
 *.ipynb
 data/*.tsv
-data/*.csv
 logs/*
 models/*
 checkpoints/*
