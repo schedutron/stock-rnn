@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 
 from tensorflow.contrib.tensorboard.plugins import projector
 
+from restore_model import prediction_by_trained_graph
+
 
 class LstmRNN(object):
     def __init__(self, sess, stock_count,
@@ -161,7 +163,7 @@ class LstmRNN(object):
         merged_test_X = []
         merged_test_y = []
         merged_test_labels = []
-
+        
         for label_, d_ in enumerate(dataset_list):
             merged_test_X += list(d_.test_X)
             merged_test_y += list(d_.test_y)
@@ -181,7 +183,8 @@ class LstmRNN(object):
             self.targets: merged_test_y,
             self.symbols: merged_test_labels,
         }
-
+        print 'merged_test_X', merged_test_X
+        print 'merged_test_y', merged_test_y
         global_step = 0
 
         num_batches = sum(len(d_.train_X) for d_ in dataset_list) // config.batch_size
@@ -196,7 +199,7 @@ class LstmRNN(object):
                 i for i, sym_label in enumerate(merged_test_labels)
                 if sym_label[0] == l])
             sample_indices[sym] = target_indices
-        print sample_indices
+        
 
         print "Start training for stocks:", [d.stock_sym for d in dataset_list]
         for epoch in xrange(config.max_epoch):
@@ -222,7 +225,7 @@ class LstmRNN(object):
 
                     if np.mod(global_step, len(dataset_list) * 100 / config.input_size) == 1:
                         test_loss, test_pred = self.sess.run([self.loss, self.pred], test_data_feed)
-
+                        
                         print "Step:%d [Epoch:%d] [Learning rate: %.6f] train_loss:%.6f test_loss:%.6f" % (
                             global_step, epoch, learning_rate, train_loss, test_loss)
 
@@ -238,7 +241,7 @@ class LstmRNN(object):
                         self.save(global_step)
 
         final_pred, final_loss = self.sess.run([self.pred, self.loss], test_data_feed)
-
+       
         # Save the final model
         self.save(global_step)
         return final_pred
@@ -275,6 +278,8 @@ class LstmRNN(object):
             global_step=step
         )
 
+        print os.path.join(self.model_logs_dir, model_name)
+
     def load(self):
         print(" [*] Reading checkpoints...")
         ckpt = tf.train.get_checkpoint_state(self.model_logs_dir)
@@ -292,7 +297,7 @@ class LstmRNN(object):
     def plot_samples(self, preds, targets, figname, stock_sym=None):
         def _flatten(seq):
             return [x for y in seq for x in y]
-
+        
         truths = _flatten(targets)[-200:]
         
         preds = _flatten(preds)[-200:]
@@ -338,3 +343,43 @@ class LstmRNN(object):
 
         plt.savefig(figname.split('.')[0]+'_normalized.png', format='png', bbox_inches='tight', transparent=True)
         plt.close()
+    
+
+    def predict(self, dataset_list, max_epoch, config):
+        merged_test_X, merged_test_y, merged_test_labels = [], [], []
+        for label_, d_ in enumerate(dataset_list):
+            merged_test_X += list(d_.test_X)
+            merged_test_y += list(d_.test_y)
+            merged_test_labels += [[label_]] * len(d_.test_X)
+
+        test_X = np.array(merged_test_X)
+        test_y = np.array(merged_test_y)
+    
+        status, counter = self.load()
+        if status:
+            graph = tf.get_default_graph()
+            test_data_feed = {
+                self.learning_rate: 0.0,
+                self.inputs: test_X,
+                self.targets: test_y
+            }
+            #prediction = graph.get_tensor_by_name('output_layer/add:0')
+            #loss = graph.get_tensor_by_name('train/loss_mse:0')
+
+            # Select samples for plotting.
+            sample_labels = range(min(config.sample_size, len(dataset_list)))
+            sample_indices = {}
+            for l in sample_labels:
+                sym = dataset_list[l].stock_sym
+                target_indices = np.array([
+                    i for i, sym_label in enumerate(merged_test_labels)
+                    if sym_label[0] == l])
+                sample_indices[sym] = target_indices
+            
+            
+            test_prediction, test_loss = self.sess.run([self.pred, self.loss], test_data_feed)
+
+            for sample_sym, indices in sample_indices.iteritems():
+                test_pred = test_prediction[indices]
+
+        return test_pred, test_loss

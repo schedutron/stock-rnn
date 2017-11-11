@@ -1,7 +1,9 @@
 import os
 import pandas as pd
+import pickle
 import pprint
 
+import matplotlib.pyplot as plt
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
@@ -24,6 +26,7 @@ flags.DEFINE_integer("embed_size", None, "If provided, use embedding vector of t
 flags.DEFINE_string("stock_symbol", None, "Target stock symbol [None]")
 flags.DEFINE_integer("sample_size", 4, "Number of stocks to plot during training. [4]")
 flags.DEFINE_boolean("train", False, "True for training, False for testing [False]")
+flags.DEFINE_boolean("write", False, "True for writing contents to the file of the same name")
 
 FLAGS = flags.FLAGS
 
@@ -104,6 +107,14 @@ def main(_):
         if FLAGS.train:
             rnn_model.train(stock_data_list, FLAGS)
         else:
+            test_prediction, test_loss = rnn_model.predict(stock_data_list, 50, FLAGS)
+            if FLAGS.write:
+                with open('api_log/'+FLAGS.stock_symbol+".pkl", 'wb') as f:
+                    pickle.dump(test_prediction, f)
+            
+            #rnn_model.plot_samples(test_prediction, test_prediction, 'check.png', 'GOOG')
+            #plt.show(block=True)
+            print '-'*33
             if not rnn_model.load()[0]:
                 raise Exception("[!] Train a model first, then run test mode")
 
